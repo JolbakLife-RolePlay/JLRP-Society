@@ -183,44 +183,46 @@ function OpenManageEmployeesMenu(society)
 end
 
 function OpenEmployeeList(society)
-	Core.TriggerServerCallback('JLRP-Society:getEmployees', function(employees)
+	if Core.PlayerData.job.is_boss == true and Core.PlayerData.job.onDuty == true then
+		Core.TriggerServerCallback('JLRP-Society:getEmployees', function(employees)
+		
+			local elements = {
+				head = {_U('employee'), _U('grade'), _U('actions')},
+				rows = {}
+			}
 
-		local elements = {
-			head = {_U('employee'), _U('grade'), _U('actions')},
-			rows = {}
-		}
+			for i=1, #employees, 1 do
+				local gradeLabel = (employees[i].job.grade_label == '' and employees[i].job.label or employees[i].job.grade_label)
 
-		for i=1, #employees, 1 do
-			local gradeLabel = (employees[i].job.grade_label == '' and employees[i].job.label or employees[i].job.grade_label)
-
-			table.insert(elements.rows, {
-				data = employees[i],
-				cols = {
-					employees[i].name,
-					gradeLabel,
-					'{{' .. _U('promote') .. '|promote}} {{' .. _U('fire') .. '|fire}}'
-				}
-			})
-		end
-
-		Core.UI.Menu.Open('list', GetCurrentResourceName(), 'employee_list_' .. society, elements, function(data, menu)
-			local employee = data.data
-
-			if data.value == 'promote' then
-				menu.close()
-				OpenPromoteMenu(society, employee)
-			elseif data.value == 'fire' then
-				Core.ShowNotification(_U('you_have_fired', employee.name))
-
-				Core.TriggerServerCallback('JLRP-Society:setJob', function()
-					OpenEmployeeList(society)
-				end, employee.citizenid, 'unemployed', 0, 'fire')
+				table.insert(elements.rows, {
+					data = employees[i],
+					cols = {
+						employees[i].name,
+						gradeLabel,
+						'{{' .. _U('promote') .. '|promote}} {{' .. _U('fire') .. '|fire}}'
+					}
+				})
 			end
-		end, function(data, menu)
-			menu.close()
-			OpenManageEmployeesMenu(society)
-		end)
-	end, society)
+
+			Core.UI.Menu.Open('list', GetCurrentResourceName(), 'employee_list_' .. society, elements, function(data, menu)
+				local employee = data.data
+
+				if data.value == 'promote' then
+					menu.close()
+					OpenPromoteMenu(society, employee)
+				elseif data.value == 'fire' then
+					Core.ShowNotification(_U('you_have_fired', employee.name))
+
+					Core.TriggerServerCallback('JLRP-Society:setJob', function()
+						OpenEmployeeList(society)
+					end, employee.citizenid, 'unemployed', 0, 'fire')
+				end
+			end, function(data, menu)
+				menu.close()
+				OpenManageEmployeesMenu(society)
+			end)
+		end, society)
+	end
 end
 
 function OpenRecruitMenu(society)
